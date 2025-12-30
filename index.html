@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>上學戰鬥鐘 - 目標 08:20</title>
+    <link rel="stylesheet" href="style.css">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@700;800&family=Noto+Sans+TC:wght@500;900&display=swap"
+        rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+</head>
+
+<body>
+
+    <div id="app">
+
+        <!-- TOP INFO -->
+        <div class="header-info">
+            <div class="target-badge">
+                <span class="material-icons">flag</span>
+                目標 08:20 AM
+            </div>
+            <div id="current-time">現在 07:00</div>
+        </div>
+
+        <!-- MAIN VISUAL -->
+        <div class="visual-container">
+            <div class="image-wrapper">
+                <img id="status-img" src="02.png" alt="Morning Status">
+            </div>
+            <div class="speech-bubble">
+                <p id="status-text">早安！又是戰鬥的一天！</p>
+            </div>
+        </div>
+
+        <!-- COUNTDOWN -->
+        <div class="timer-section">
+            <div class="label">距離死線還有</div>
+            <div id="countdown">00:00:00</div>
+        </div>
+
+        <!-- CONTROL -->
+        <div class="controls">
+            <button id="start-btn" onclick="initApp()">
+                <span class="material-icons">play_arrow</span>
+                啟動戰鬥 (開啟聲音 & 恆亮)
+            </button>
+            <div id="active-status" class="hidden">
+                <span class="material-icons pulse">screen_lock_portrait</span>
+                螢幕恆亮中
+            </div>
+        </div>
+
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
