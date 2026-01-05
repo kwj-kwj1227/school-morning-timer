@@ -27,16 +27,18 @@ body {
     background-color: var(--bg);
     color: var(--text);
     font-family: var(--font-zh);
-    height: 100vh;
+    min-height: 100vh;
     display: flex;
     justify-content: center;
-    overflow: hidden;
+    overflow-y: auto;
+    /* Allow scrolling */
 }
 
 #app {
     width: 100%;
     max-width: 600px;
-    height: 100%;
+    height: auto;
+    min-height: 100vh;
     display: flex;
     flex-direction: column;
     padding: 20px;
@@ -157,6 +159,45 @@ body {
     gap: 10px;
 }
 
+/* INPUT GROUP */
+.input-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 10px;
+    width: 100%;
+}
+
+.input-group label {
+    font-size: 1.1rem;
+    color: #795548;
+    margin-bottom: 8px;
+    font-weight: 700;
+}
+
+#target-time,
+#nag-intensity {
+    font-family: var(--font-main);
+    font-size: 1.5rem;
+    padding: 10px 20px;
+    border: 3px solid var(--primary);
+    border-radius: 15px;
+    color: var(--text);
+    background: white;
+    text-align: center;
+    width: 80%;
+    max-width: 300px;
+    outline: none;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    appearance: none;
+    /* Normalize select */
+}
+
+#target-time:focus,
+#nag-intensity:focus {
+    border-color: var(--danger);
+}
+
 #start-btn {
     background: var(--text);
     color: white;
@@ -232,13 +273,16 @@ body {
 @keyframes pulseAnim {
     0% {
         opacity: 1;
+        transform: scale(1);
     }
 
     50% {
         opacity: 0.5;
+        transform: scale(0.95);
     }
 
     100% {
         opacity: 1;
+        transform: scale(1);
     }
 }

@@ -1,6 +1,9 @@
 // --- CONFIG ---
-const TARGET_HOUR = 8;
-const TARGET_MINUTE = 20;
+const MODE_CONFIG = {
+    standard: { long: 5, medium: 1, short: 30 }, // Minutes, Minutes, Seconds
+    gentle: { long: 10, medium: 5, short: 60 },
+    hell: { long: 2, medium: 0.5, short: 10 }
+};
 
 const IMAGES = ['02.png', '39.png', '32.png', '08.png'];
 
@@ -8,7 +11,10 @@ const IMAGES = ['02.png', '39.png', '32.png', '08.png'];
 let isActive = false;
 let wakeLock = null;
 let timerInterval = null;
-let lastSeconds = -1; // To track second changes
+let lastSeconds = -1;
+let targetHour = 8;
+let targetMinute = 0;
+let nagIntensity = 'standard';
 
 // --- DOM ---
 const countdownEl = document.getElementById('countdown');
@@ -17,12 +23,60 @@ const imgEl = document.getElementById('status-img');
 const textEl = document.getElementById('status-text');
 const startBtn = document.getElementById('start-btn');
 const statusEl = document.getElementById('active-status');
+const timeInput = document.getElementById('target-time');
+const nagSelect = document.getElementById('nag-intensity');
+const inputGroups = document.querySelectorAll('.input-group'); // Select all input groups
+const targetDisplay = document.getElementById('target-display');
+const headerInfo = document.querySelector('.header-info');
+
+// --- LOAD SETTINGS ---
+const savedTime = localStorage.getItem('schoolTimer_targetTime');
+const savedIntensity = localStorage.getItem('schoolTimer_intensity');
+
+if (savedTime) {
+    timeInput.value = savedTime;
+    updateTargetBadge(savedTime);
+}
+
+if (savedIntensity && MODE_CONFIG[savedIntensity]) {
+    nagIntensity = savedIntensity;
+    nagSelect.value = savedIntensity;
+}
+
+timeInput.addEventListener('change', (e) => {
+    localStorage.setItem('schoolTimer_targetTime', e.target.value);
+    updateTargetBadge(e.target.value);
+});
+
+nagSelect.addEventListener('change', (e) => {
+    nagIntensity = e.target.value;
+    localStorage.setItem('schoolTimer_intensity', nagIntensity);
+});
+
+function updateTargetBadge(timeStr) {
+    targetDisplay.innerText = `目標 ${timeStr}`;
+}
 
 // --- INIT ---
 function initApp() {
+    // Parse Input Time
+    const val = timeInput.value;
+    if (!val) {
+        alert("請先設定時間！");
+        return;
+    }
+    const [h, m] = val.split(':');
+    targetHour = parseInt(h);
+    targetMinute = parseInt(m);
+
+    // Update Intensity
+    nagIntensity = nagSelect.value;
+
     isActive = true;
     startBtn.classList.add('hidden');
+    inputGroups.forEach(el => el.classList.add('hidden'));
     statusEl.classList.remove('hidden');
+    headerInfo.classList.remove('hidden');
 
     // First speak to unlock audio context on mobile
     speak("上學戰鬥模式，啟動！");
@@ -36,10 +90,10 @@ function initApp() {
 function runLoop() {
     const now = new Date();
     const target = new Date();
-    target.setHours(TARGET_HOUR, TARGET_MINUTE, 0, 0);
+    target.setHours(targetHour, targetMinute, 0, 0);
 
     // Update Clock
-    const timeStr = now.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' });
+    const timeStr = now.toLocaleTimeString('zh-TW', { hour12: false, hour: '2-digit', minute: '2-digit' });
     timeEl.innerText = `現在 ${timeStr}`;
 
     // Calculate Diff
@@ -65,10 +119,6 @@ function updateDisplay(seconds) {
     const m = Math.floor((seconds % 3600) / 60);
     const s = seconds % 60;
 
-    // Format MM:SS (Show HH if needed, but requirements said MM:SS mostly)
-    // If > 1 hour, maybe show HH:MM:SS, but intended for morning.
-    // Let's stick to MM:SS if < 1 hour.
-
     let text = "";
     if (h > 0) {
         text = `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
@@ -93,7 +143,7 @@ function handleLateState(secondsLate) {
 
 // --- NAGGING SYSTEM ---
 function checkNagging(diffSeconds) {
-    const m = Math.floor(diffSeconds / 60);
+    const totalMinutes = Math.floor(diffSeconds / 60); // Total minutes left
     const s = diffSeconds % 60;
 
     // Avoid duplicate triggers in same second
@@ -103,28 +153,48 @@ function checkNagging(diffSeconds) {
     let shouldSpeak = false;
     let message = "";
 
-    // RULE 1: > 20 mins left -> Every 5 mins
-    if (m >= 20) {
-        if (m % 5 === 0 && s === 0) {
+    const config = MODE_CONFIG[nagIntensity] || MODE_CONFIG['standard'];
+
+    // PHASE 1: > 20 mins
+    if (totalMinutes >= 20) {
+        // config.long is in minutes
+        const intervalM = config.long;
+        if (totalMinutes % intervalM === 0 && s === 0) {
             shouldSpeak = true;
-            message = `現在時間 ${new Date().getHours()}點${new Date().getMinutes()}分，還剩 ${m} 分鐘。`;
+            message = `現在時間 ${new Date().getHours()}點${new Date().getMinutes()}分，還剩 ${totalMinutes} 分鐘。`;
         }
     }
-    // RULE 2: < 20 mins left -> Every 1 min
-    else if (m < 20 && m >= 5) {
-        if (s === 0) {
-            shouldSpeak = true;
-            message = `注意！只剩 ${m} 分鐘！快點動作！`;
+    // PHASE 2: < 20 mins AND >= 5 mins
+    else if (totalMinutes < 20 && totalMinutes >= 5) {
+        const intervalM = config.medium;
+        // Handle fractional minutes if needed (0.5), but here standard is 1, gentle 5, hell 0.5 (30s)
+
+        // Special case for Hell mode 0.5 min (30s)
+        if (intervalM < 1) {
+            // 30 seconds interval
+            if (s % 30 === 0) {
+                shouldSpeak = true;
+                message = `注意！只剩 ${totalMinutes} 分鐘！快動作！`;
+            }
+        } else {
+            // Minutes interval
+            if (totalMinutes % intervalM === 0 && s === 0) {
+                shouldSpeak = true;
+                message = `注意！只剩 ${totalMinutes} 分鐘！快點動作！`;
+            }
         }
     }
-    // RULE 3: < 5 mins left -> Every 30 seconds
-    else if (m < 5) {
-        if (s % 30 === 0) {
+    // PHASE 3: < 5 mins
+    else if (totalMinutes < 5) {
+        const intervalS = config.short; // Seconds
+
+        if (s % intervalS === 0) {
             shouldSpeak = true;
-            if (m === 0 && s < 30) {
+            if (totalMinutes === 0) {
+                // If less than 1 minute, always speak seconds
                 message = `剩最後 ${s} 秒！快跑！`;
             } else {
-                message = `快遲到了！剩 ${m} 分鐘！`;
+                message = `快遲到了！剩 ${totalMinutes} 分鐘！`;
             }
         }
     }

@@ -17,10 +17,10 @@
     <div id="app">
 
         <!-- TOP INFO -->
-        <div class="header-info">
+        <div class="header-info hidden">
             <div class="target-badge">
                 <span class="material-icons">flag</span>
-                目標 08:20 AM
+                <span id="target-display">目標 08:00</span>
             </div>
             <div id="current-time">現在 07:00</div>
         </div>
@@ -43,6 +43,20 @@
 
         <!-- CONTROL -->
         <div class="controls">
+            <div class="input-group">
+                <label for="target-time">設定出門時間</label>
+                <input type="time" id="target-time" value="08:00">
+            </div>
+
+            <div class="input-group">
+                <label for="nag-intensity">碎唸強度</label>
+                <select id="nag-intensity">
+                    <option value="standard">標準模式 (Regular)</option>
+                    <option value="gentle">溫柔模式 (Gentle)</option>
+                    <option value="hell">地獄模式 (Hell)</option>
+                </select>
+            </div>
+
             <button id="start-btn" onclick="initApp()">
                 <span class="material-icons">play_arrow</span>
                 啟動戰鬥 (開啟聲音 & 恆亮)
